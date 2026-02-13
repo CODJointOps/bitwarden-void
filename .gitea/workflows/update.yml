@@ -29,12 +29,14 @@ jobs:
           VERSION=${TAG#desktop-v}
           VERSION=$(echo "$VERSION" | sed 's/^[ \t]*//;s/[ \t]*$//')
           DEB_URL=$(echo "$RELEASES" | jq -r "[.[] | select(.tag_name == \"$TAG\")] | .[0].assets[] | select(.name == \"Bitwarden-$VERSION-amd64.deb\") | .browser_download_url")
-          if [[ -z "$DEB_URL" ]]; then
-            echo "No .deb found"
+          ARM64_URL=$(echo "$RELEASES" | jq -r "[.[] | select(.tag_name == \"$TAG\")] | .[0].assets[] | select(.name == \"bitwarden_${VERSION}_arm64.tar.gz\") | .browser_download_url")
+          if [[ -z "$DEB_URL" || -z "$ARM64_URL" ]]; then
+            echo "Missing required release assets for checksum updates"
             exit 0
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "deb_url=$DEB_URL" >> $GITHUB_OUTPUT
+          echo "arm64_url=$ARM64_URL" >> $GITHUB_OUTPUT
 
       - name: Read Current Version
         if: steps.get_release.outputs.version
@@ -47,15 +49,19 @@ jobs:
         if: steps.get_release.outputs.version && steps.get_release.outputs.version != steps.check_version.outputs.current_version
         id: download
         run: |
-          curl -Lo bitwarden.deb "${{ steps.get_release.outputs.deb_url }}"
-          SHA256=$(sha256sum bitwarden.deb | awk '{print $1}')
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          curl -Lo bitwarden-amd64.deb "${{ steps.get_release.outputs.deb_url }}"
+          curl -Lo bitwarden-arm64.tar.gz "${{ steps.get_release.outputs.arm64_url }}"
+          AMD64_SHA256=$(sha256sum bitwarden-amd64.deb | awk '{print $1}')
+          ARM64_SHA256=$(sha256sum bitwarden-arm64.tar.gz | awk '{print $1}')
+          echo "amd64_sha256=$AMD64_SHA256" >> $GITHUB_OUTPUT
+          echo "arm64_sha256=$ARM64_SHA256" >> $GITHUB_OUTPUT
 
       - name: Update Template
         if: steps.get_release.outputs.version && steps.get_release.outputs.version != steps.check_version.outputs.current_version
         run: |
           sed -i "s/^version=.*/version=${{ steps.get_release.outputs.version }}/" template
-          sed -i "s/^checksum=.*/checksum=${{ steps.download.outputs.sha256 }}/" template
+          sed -i "/x86_64\\*)/,/;;/ s/^[[:space:]]*checksum=.*/\t\tchecksum=${{ steps.download.outputs.amd64_sha256 }}/" template
+          sed -i "/aarch64\\*)/,/;;/ s/^[[:space:]]*checksum=.*/\t\tchecksum=${{ steps.download.outputs.arm64_sha256 }}/" template
 
       - name: Commit and Push
         if: steps.get_release.outputs.version && steps.get_release.outputs.version != steps.check_version.outputs.current_version
