@@ -31,12 +31,16 @@ do_extract() {
             tar xf data.tar.xz -C ${wrksrc}
             ;;
         *.tar.gz)
-            tar xf ${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_archive}
-            local _appdir
-            _appdir="$(find . -maxdepth 1 -type d -name 'Bitwarden-linux-*' -print -quit)"
-            [ -n "${_appdir}" ] || msg_error "Unable to find extracted Bitwarden directory\n"
+            local _srcdist
+            _srcdist=${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_archive}
             mkdir -p ${wrksrc}/opt/Bitwarden
-            cp -a ${_appdir}/. ${wrksrc}/opt/Bitwarden/
+            rm -rf ${wrksrc}/opt/Bitwarden/*
+            if ! tar xf ${_srcdist} -C ${wrksrc}/opt/Bitwarden --strip-components=1; then
+                rm -rf ${wrksrc}/opt/Bitwarden/*
+                tar xf ${_srcdist} -C ${wrksrc}/opt/Bitwarden
+            elif [ -z "$(find ${wrksrc}/opt/Bitwarden -mindepth 1 -print -quit)" ]; then
+                tar xf ${_srcdist} -C ${wrksrc}/opt/Bitwarden
+            fi
             ;;
     esac
 }
