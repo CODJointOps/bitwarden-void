@@ -24,15 +24,15 @@ jobs:
           TAG=$(echo "$RELEASES" | jq -r '[.[] | select(.draft == false and .prerelease == false) | select(.tag_name | startswith("desktop-v"))] | sort_by((.tag_name | sub("^[^0-9]*";"") | split("-") | .[0] | [scan("[0-9]+")] | map(tonumber)), (.tag_name | sub("^[^0-9]*";"") | split("-") | .[1:] | join(".") | [scan("[0-9]+")] | map(tonumber)), .published_at) | last | .tag_name')
           if [[ -z "$TAG" ]]; then
             echo "No desktop release found"
-            exit 0
+            exit 1
           fi
           VERSION=${TAG#desktop-v}
           VERSION=$(echo "$VERSION" | sed 's/^[ \t]*//;s/[ \t]*$//')
-          DEB_URL=$(echo "$RELEASES" | jq -r "[.[] | select(.tag_name == \"$TAG\")] | .[0].assets[] | select(.name == \"Bitwarden-$VERSION-amd64.deb\") | .browser_download_url")
-          ARM64_URL=$(echo "$RELEASES" | jq -r "[.[] | select(.tag_name == \"$TAG\")] | .[0].assets[] | select(.name == \"bitwarden_${VERSION}_arm64.tar.gz\") | .browser_download_url")
+          DEB_URL=$(echo "$RELEASES" | jq -r "[.[] | select(.tag_name == \"$TAG\")] | .[0].assets[] | select(.name == \"oss-Bitwarden-$VERSION-amd64.deb\") | .browser_download_url")
+          ARM64_URL=$(echo "$RELEASES" | jq -r "[.[] | select(.tag_name == \"$TAG\")] | .[0].assets[] | select(.name == \"oss-bitwarden_${VERSION}_arm64.tar.gz\") | .browser_download_url")
           if [[ -z "$DEB_URL" || -z "$ARM64_URL" ]]; then
             echo "Missing required release assets for checksum updates"
-            exit 0
+            exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "deb_url=$DEB_URL" >> $GITHUB_OUTPUT

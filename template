@@ -10,12 +10,12 @@ homepage="https://bitwarden.com"
 case "${XBPS_TARGET_MACHINE}" in
 	x86_64*)
 		_upstream_arch=amd64
-		_archive=Bitwarden-${version}-${_upstream_arch}.deb
+		_archive=oss-Bitwarden-${version}-${_upstream_arch}.deb
 		checksum=a45a34a20a9d5becbb1c710851717583ad578597d10fbd2bd57fe597f7625f41
 		;;
 	aarch64*)
 		_upstream_arch=arm64
-		_archive=bitwarden_${version}_${_upstream_arch}.tar.gz
+		_archive=oss-bitwarden_${version}_${_upstream_arch}.tar.gz
 		checksum=5677e2da667e27ad322b2fe2045fc0965c38a1cc41d7e43db98d313e340f6286
 		;;
 esac
